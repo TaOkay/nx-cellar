@@ -125,7 +125,7 @@ func (ldb *LocalSwitchDBManager) CreateLocalSwitchFilesDB(folders []string,
 }
 
 func scanFolder(folder string, recursive bool, files *[]ExtendedFileInfo, progress ProgressUpdater) error {
-	filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
 		if path == folder {
 			return nil
 		}
@@ -154,7 +154,6 @@ func scanFolder(folder string, recursive bool, files *[]ExtendedFileInfo, progre
 
 		return nil
 	})
-	return nil
 }
 
 func (ldb *LocalSwitchDBManager) ClearScanData() error {

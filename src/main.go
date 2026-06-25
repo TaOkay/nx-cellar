@@ -93,7 +93,7 @@ func createLogger(workingFolder string, debug bool) *zap.Logger {
 	logger, err := config.Build()
 	if err != nil {
 		fmt.Printf("failed to create logger - %v", err)
-		panic(1)
+		os.Exit(1)
 	}
 	zap.ReplaceGlobals(logger)
 	return logger

@@ -82,6 +82,10 @@ func (c *Console) Start() {
 
 	//4. create switch title db
 	titlesDB, err := db.CreateSwitchTitleDB(titleFile, versionsFile)
+	if err != nil {
+		fmt.Printf("failed to create switch title DB: %v\n", err)
+		return
+	}
 
 	//5. read local files
 	folderToScan := settingsObj.Folder

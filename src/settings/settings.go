@@ -81,8 +81,17 @@ func ReadSettingsAsJSON(baseFolder string) string {
 	if _, err := os.Stat(filepath.Join(baseFolder, SETTINGS_FILENAME)); err != nil {
 		saveDefaultSettings(baseFolder)
 	}
-	file, _ := os.Open(filepath.Join(baseFolder, SETTINGS_FILENAME))
-	bytes, _ := io.ReadAll(file)
+	file, err := os.Open(filepath.Join(baseFolder, SETTINGS_FILENAME))
+	if err != nil {
+		zap.S().Warnf("Failed to open settings file: %v", err)
+		return "{}"
+	}
+	defer file.Close()
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		zap.S().Warnf("Failed to read settings file: %v", err)
+		return "{}"
+	}
 	return string(bytes)
 }
 
@@ -180,8 +189,15 @@ func saveDefaultSettings(baseFolder string) *AppSettings {
 }
 
 func SaveSettings(settings *AppSettings, baseFolder string) *AppSettings {
-	file, _ := json.MarshalIndent(settings, "", " ")
-	_ = os.WriteFile(filepath.Join(baseFolder, SETTINGS_FILENAME), file, 0644)
+	file, err := json.MarshalIndent(settings, "", " ")
+	if err != nil {
+		zap.S().Errorf("Failed to marshal settings: %v", err)
+		return settings
+	}
+	err = os.WriteFile(filepath.Join(baseFolder, SETTINGS_FILENAME), file, 0644)
+	if err != nil {
+		zap.S().Errorf("Failed to write settings file: %v", err)
+	}
 	settingsInstance = settings
 	return settings
 }

@@ -1,16 +1,16 @@
 package db
 
 import (
-	bytes2 "bytes"
+	"bytes"
 	"encoding/json"
 	"errors"
-	"go.uber.org/zap"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type ProgressUpdater interface {
@@ -32,13 +32,13 @@ func LoadAndUpdateFile(url string, filePath string, etag string) (*os.File, stri
 
 	//try to check if there is a new version
 	//if so, save the file
-	bytes, newEtag, err := downloadBytesFromUrl(url, etag)
+	data, newEtag, err := downloadBytesFromUrl(url, etag)
 	if err == nil {
 		//validate json structure
 		var test map[string]interface{}
-		err = decodeToJsonObject(bytes2.NewReader(bytes), &test)
+		err = decodeToJsonObject(bytes.NewReader(data), &test)
 		if err == nil {
-			file, err = saveFile(bytes, filePath)
+			file, err = saveFile(data, filePath)
 			etag = newEtag
 		} else {
 			zap.S().Infof("ignoring new update [%v], reason - [malformed json file]", url)
@@ -97,7 +97,7 @@ func downloadBytesFromUrl(url string, etag string) ([]byte, string, error) {
 	etag = resp.Header.Get("Etag")
 
 	if resp.StatusCode == http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, "", err
 		}
@@ -107,9 +107,9 @@ func downloadBytesFromUrl(url string, etag string) ([]byte, string, error) {
 	return nil, "", errors.New("no new updates")
 }
 
-func saveFile(bytes []byte, fileName string) (*os.File, error) {
+func saveFile(data []byte, fileName string) (*os.File, error) {
 
-	err := ioutil.WriteFile(fileName, bytes, 0644)
+	err := os.WriteFile(fileName, data, 0644)
 	if err != nil {
 		return nil, err
 	}

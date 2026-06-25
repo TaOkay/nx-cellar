@@ -28,8 +28,8 @@ func SwitchKeys() (*switchKeys, error) {
 func InitSwitchKeys(baseFolder string) (*switchKeys, error) {
 	var (
 		path string
-		p *properties.Properties
-		err error
+		p    *properties.Properties
+		err  error
 	)
 	logger := zap.S()
 
@@ -43,7 +43,7 @@ func InitSwitchKeys(baseFolder string) (*switchKeys, error) {
 
 		logger.Infof("Trying to load prod.keys based on settings.json: %v", path)
 		p, err = properties.LoadFile(path, properties.UTF8)
-	}else{
+	} else {
 		err = errors.New("prod.keys not defined in settings.json")
 	}
 
