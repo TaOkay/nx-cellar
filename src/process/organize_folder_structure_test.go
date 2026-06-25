@@ -1,9 +1,10 @@
 package process
 
 import (
-	"robpike.io/nihongo"
 	"strings"
 	"testing"
+
+	"robpike.io/nihongo"
 )
 
 //var folderIllegalCharsRegex = regexp.MustCompile(`[./\\?%*:;=|"<>]`)

@@ -108,18 +108,3 @@ func (pd *PersistentDB) GetEntry(tableName string, key string, value interface{}
 	})
 	return err
 }
-
-/*func (pd *PersistentDB) GetEntries() (map[string]*switchfs.ContentMetaAttributes, error) {
-	pd.db.View(func(tx *bolt.Tx) error {
-		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte(METADATA_TABLENAME))
-
-		c := b.Cursor()
-
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			fmt.Printf("key=%s, value=%s\n", k, v)
-		}
-
-		return nil
-	})
-}*/

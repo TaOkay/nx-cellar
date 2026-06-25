@@ -3,8 +3,9 @@ package switchfs
 import (
 	"bytes"
 	"errors"
-	"go.uber.org/zap"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 func ReadNspMetadata(filePath string) (map[string]*ContentMetaAttributes, error) {

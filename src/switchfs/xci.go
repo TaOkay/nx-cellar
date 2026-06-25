@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"go.uber.org/zap"
 	"io"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 func ReadXciMetadata(filePath string) (map[string]*ContentMetaAttributes, error) {
