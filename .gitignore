@@ -3,4 +3,6 @@ resources/app/vendor
 output
 windows.syso
 bind_*_amd64.go
+bind_*_arm64.go
+astilectron-bundler
 astilectron-bundler.exe
