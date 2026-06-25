@@ -18,6 +18,7 @@ var (
 	folderIllegalCharsRegex = regexp.MustCompile(`[/\\?%*:;=|"<>]`)
 	nonAscii                = regexp.MustCompile("[a-zA-Z0-9áéíóú@#%&',.\\s-\\[\\]\\(\\)\\+]")
 	cjk                     = regexp.MustCompile("[\u2f70-\u2FA1\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\\p{Katakana}\\p{Hiragana}\\p{Hangul}]")
+	whitespaceRegex         = regexp.MustCompile(`\s+`)
 )
 
 func DeleteOldUpdates(baseFolder string, localDB *db.LocalSwitchFilesDB, updateProgress db.ProgressUpdater) {
@@ -414,8 +415,7 @@ func applyTemplate(templateData map[string]string, useSafeNames bool, template s
 		result = strings.Join(safe, "")
 	}
 
-	space := regexp.MustCompile(`\s+`)
-	result = space.ReplaceAllString(result, " ")
+	result = whitespaceRegex.ReplaceAllString(result, " ")
 
 	result = strings.TrimSpace(result)
 	return folderIllegalCharsRegex.ReplaceAllString(result, "")

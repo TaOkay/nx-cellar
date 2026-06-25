@@ -369,10 +369,11 @@ func (g *GUI) buildSwitchDb() (*db.SwitchTitlesDB, error) {
 }
 
 func (g *GUI) buildLocalDB(localDbManager *db.LocalSwitchDBManager, ignoreCache bool) (*db.LocalSwitchFilesDB, error) {
-	folderToScan := settings.ReadSettings(g.baseFolder).Folder
-	recursiveMode := settings.ReadSettings(g.baseFolder).ScanRecursively
+	settingsObj := settings.ReadSettings(g.baseFolder)
+	folderToScan := settingsObj.Folder
+	recursiveMode := settingsObj.ScanRecursively
 
-	scanFolders := settings.ReadSettings(g.baseFolder).ScanFolders
+	scanFolders := settingsObj.ScanFolders
 	scanFolders = append(scanFolders, folderToScan)
 	localDB, err := localDbManager.CreateLocalSwitchFilesDB(scanFolders, g, recursiveMode, ignoreCache)
 	g.state.localDB = localDB
@@ -407,6 +408,7 @@ func (g *GUI) UpdateProgress(curr int, total int, message string) {
 
 func (g *GUI) getMissingGames() []SwitchTitle {
 	var result []SwitchTitle
+	options := settings.ReadSettings(g.baseFolder)
 	for k, v := range g.state.switchDB.TitlesMap {
 		if _, ok := g.state.localDB.TitlesMap[k]; ok {
 			continue
@@ -415,7 +417,6 @@ func (g *GUI) getMissingGames() []SwitchTitle {
 			continue
 		}
 
-		options := settings.ReadSettings(g.baseFolder)
 		if options.HideDemoGames && v.Attributes.IsDemo {
 			continue
 		}

@@ -9,6 +9,23 @@ $(function () {
 
     let currTable
 
+    // Dark mode helper function
+    function setDarkMode(isDark) {
+        if (isDark) {
+            document.body.classList.add("bootstrap-dark");
+            document.body.classList.remove("bootstrap");
+            try { require('electron').remote.nativeTheme.themeSource = 'dark'; } catch(e){}
+            $('meta[name="color-scheme"]').attr("content", "dark");
+            $("#toggle-dark-mode").text("☀️");
+        } else {
+            document.body.classList.add("bootstrap");
+            document.body.classList.remove("bootstrap-dark");
+            try { require('electron').remote.nativeTheme.themeSource = 'light'; } catch(e){}
+            $('meta[name="color-scheme"]').attr("content", "light");
+            $("#toggle-dark-mode").text("🌙");
+        }
+    }
+
     // Fluent UI formatter for Title + Thumbnail
     const fluentTitleFormatter = function(cell, formatterParams, onRendered){
         const data = cell.getRow().getData();
@@ -69,19 +86,7 @@ $(function () {
             }
 
             // Apply Dark Mode from settings
-            if(state.settings.dark_mode) {
-                document.body.classList.add("bootstrap-dark");
-                document.body.classList.remove("bootstrap");
-                try { require('electron').remote.nativeTheme.themeSource = 'dark'; } catch(e){}
-                $('meta[name="color-scheme"]').attr("content", "dark");
-                $("#toggle-dark-mode").text("☀️");
-            } else {
-                document.body.classList.add("bootstrap");
-                document.body.classList.remove("bootstrap-dark");
-                try { require('electron').remote.nativeTheme.themeSource = 'light'; } catch(e){}
-                $('meta[name="color-scheme"]').attr("content", "light");
-                $("#toggle-dark-mode").text("🌙");
-            }
+            setDarkMode(state.settings.dark_mode);
         });
 
         sendMessage("isKeysFileAvailable", "", function (message) {
@@ -283,7 +288,7 @@ $(function () {
                             {title: "Game", field: "Attributes.name", headerFilter:"input",formatter:fluentTitleFormatter, width:400},
                             {title: "# Missing", field: "missing_dlc.length"},
                             {title: "Missing DLC", headerSort:false, field: "missing_dlc",formatter:function(cell, formatterParams, onRendered){
-                                    value = ""
+                                    let value = ""
                                     for (var i in cell.getValue())
                                     {
                                         value +="<div>"+cell.getValue()[i]+"</div>"
@@ -617,19 +622,7 @@ $(function () {
             e.preventDefault();
             state.settings.dark_mode = !state.settings.dark_mode;
             
-            if(state.settings.dark_mode) {
-                document.body.classList.add("bootstrap-dark");
-                document.body.classList.remove("bootstrap");
-                try { require('electron').remote.nativeTheme.themeSource = 'dark'; } catch(e){}
-                $('meta[name="color-scheme"]').attr("content", "dark");
-                $("#toggle-dark-mode").text("☀️");
-            } else {
-                document.body.classList.add("bootstrap");
-                document.body.classList.remove("bootstrap-dark");
-                try { require('electron').remote.nativeTheme.themeSource = 'light'; } catch(e){}
-                $('meta[name="color-scheme"]').attr("content", "light");
-                $("#toggle-dark-mode").text("🌙");
-            }
+            setDarkMode(state.settings.dark_mode);
             
             // Save the toggle preference without scanning
             sendMessage("saveSettings", JSON.stringify(state.settings), function(){});
