@@ -551,15 +551,29 @@ func (g *GUI) buildLocalDB(localDbManager *db.LocalSwitchDBManager, ignoreCache 
 }
 
 func (g *GUI) organizeLibrary() {
-   folderToScan := settings.ReadSettings(g.baseFolder).Folder
-   options := settings.ReadSettings(g.baseFolder).OrganizeOptions
+   settingsObj := settings.ReadSettings(g.baseFolder)
+   folderToScan := settingsObj.Folder
+   options := settingsObj.OrganizeOptions
    if !process.IsOptionsValid(options) {
       zap.S().Error("the organize options in settings.json are not valid, please check that the template contains file/folder name")
       g.state.window.SendMessage(Message{Name: "error", Payload: "the organize options in settings.json are not valid, please check that the template contains file/folder name"}, func(m *astilectron.EventMessage) {})
       return
    }
-   if settings.ReadSettings(g.baseFolder).OrganizeOptions.DeleteOldUpdateFiles {
-      process.DeleteOldUpdates(g.baseFolder, g.state.localDB, g)
+   if settingsObj.OrganizeOptions.DeleteOldUpdateFiles {
+      var archiveMgr *archive.ArchiveManager
+      if settingsObj.ArchiveFolder != "" {
+         var err error
+         archiveMgr, err = archive.NewArchiveManager(settingsObj.ArchiveFolder, g.sugarLogger)
+         if err != nil {
+            g.sugarLogger.Warnf("Failed to create archive manager, falling back to delete: %v", err)
+         } else {
+            if err := archiveMgr.EnsureArchiveDir(); err != nil {
+               g.sugarLogger.Warnf("Failed to create archive directory, falling back to delete: %v", err)
+               archiveMgr = nil
+            }
+         }
+      }
+      process.DeleteOldUpdates(g.baseFolder, g.state.localDB, g, archiveMgr)
    }
    process.OrganizeByFolders(folderToScan, g.state.localDB, g.state.switchDB, g)
 }

@@ -139,7 +139,7 @@ func (c *Console) Start() {
 	if settingsObj.OrganizeOptions.DeleteOldUpdateFiles {
 		progressBar = progressbar.New(2000)
 		fmt.Printf("\nDeleting old updates\n")
-		process.DeleteOldUpdates(c.baseFolder, localDB, c)
+		process.DeleteOldUpdates(c.baseFolder, localDB, c, nil)
 		progressBar.Finish()
 	}
 

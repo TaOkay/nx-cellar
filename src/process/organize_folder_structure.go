@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/trembon/switch-library-manager/archive"
 	"github.com/trembon/switch-library-manager/db"
 	"github.com/trembon/switch-library-manager/settings"
 	"go.uber.org/zap"
@@ -21,20 +22,30 @@ var (
 	whitespaceRegex         = regexp.MustCompile(`\s+`)
 )
 
-func DeleteOldUpdates(baseFolder string, localDB *db.LocalSwitchFilesDB, updateProgress db.ProgressUpdater) {
+func DeleteOldUpdates(baseFolder string, localDB *db.LocalSwitchFilesDB, updateProgress db.ProgressUpdater, archiveMgr *archive.ArchiveManager) {
 	i := 0
 	for k, v := range localDB.Skipped {
 		switch v.ReasonCode {
 		case db.REASON_DUPLICATE, db.REASON_OLD_UPDATE:
 			fileToRemove := filepath.Join(k.BaseFolder, k.FileName)
 			if updateProgress != nil {
-				updateProgress.UpdateProgress(0, 0, "Deleting "+fileToRemove)
+				updateProgress.UpdateProgress(0, 0, "Archiving "+fileToRemove)
 			}
-			zap.S().Infof("Deleting file: %v \n", fileToRemove)
-			err := os.Remove(fileToRemove)
-			if err != nil {
-				zap.S().Errorf("Failed to delete file  %v  [%v]\n", fileToRemove, err)
-				continue
+
+			if archiveMgr != nil {
+				zap.S().Infof("Archiving file: %v \n", fileToRemove)
+				_, err := archiveMgr.MoveToArchive(fileToRemove)
+				if err != nil {
+					zap.S().Errorf("Failed to archive file %v [%v]\n", fileToRemove, err)
+					continue
+				}
+			} else {
+				zap.S().Infof("Deleting file: %v \n", fileToRemove)
+				err := os.Remove(fileToRemove)
+				if err != nil {
+					zap.S().Errorf("Failed to delete file %v [%v]\n", fileToRemove, err)
+					continue
+				}
 			}
 			i++
 		}
