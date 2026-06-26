@@ -43,16 +43,17 @@ type SwitchTitle struct {
 }
 
 type LibraryTemplateData struct {
-   Id      int    `json:"id"`
-   Name    string `json:"name"`
-   Version string `json:"version"`
-   Dlc     string `json:"dlc"`
-   TitleId string `json:"titleId"`
-   Path    string `json:"path"`
-   Icon    string `json:"icon"`
-   Update  int    `json:"update"`
-   Region  string `json:"region"`
-   Type    string `json:"type"`
+   Id          int    `json:"id"`
+   Name        string `json:"name"`
+   Version     string `json:"version"`
+   Dlc         string `json:"dlc"`
+   TitleId     string `json:"titleId"`
+   Path        string `json:"path"`
+   Icon        string `json:"icon"`
+   Update      int    `json:"update"`
+   Region      string `json:"region"`
+   Type        string `json:"type"`
+   LocationTag string `json:"locationTag"`
 }
 
 type ProgressUpdate struct {
@@ -218,6 +219,8 @@ func (g *GUI) handleMessage(m *astilectron.EventMessage) interface{} {
       response := LocalLibraryData{}
       libraryData := []LibraryTemplateData{}
       issues := []Pair{}
+      settingsObj := settings.ReadSettings(g.baseFolder)
+      scanFolders := append(settingsObj.ScanFolders, settingsObj.Folder)
       for k, v := range localDB.TitlesMap {
          if v.BaseExist {
             version := ""
@@ -240,14 +243,15 @@ func (g *GUI) handleMessage(m *astilectron.EventMessage) interface{} {
                }
                libraryData = append(libraryData,
                   LibraryTemplateData{
-                     Icon:    title.Attributes.IconUrl,
-                     Name:    name,
-                     TitleId: title.Attributes.Id,
-                     Update:  v.LatestUpdate,
-                     Version: version,
-                     Region:  title.Attributes.Region,
-                     Type:    getType(v),
-                     Path:    filepath.Join(v.File.ExtendedInfo.BaseFolder, v.File.ExtendedInfo.FileName),
+                     Icon:        title.Attributes.IconUrl,
+                     Name:        name,
+                     TitleId:     title.Attributes.Id,
+                     Update:      v.LatestUpdate,
+                     Version:     version,
+                     Region:      title.Attributes.Region,
+                     Type:        getType(v),
+                     Path:        filepath.Join(v.File.ExtendedInfo.BaseFolder, v.File.ExtendedInfo.FileName),
+                     LocationTag: g.tagManager.GetLocationTag(filepath.Join(v.File.ExtendedInfo.BaseFolder, v.File.ExtendedInfo.FileName), scanFolders),
                   })
             } else {
                if name == "" {
@@ -255,12 +259,13 @@ func (g *GUI) handleMessage(m *astilectron.EventMessage) interface{} {
                }
                libraryData = append(libraryData,
                   LibraryTemplateData{
-                     Name:    name,
-                     Update:  v.LatestUpdate,
-                     Version: version,
-                     Type:    getType(v),
-                     TitleId: v.File.Metadata.TitleId,
-                     Path:    v.File.ExtendedInfo.FileName,
+                     Name:        name,
+                     Update:      v.LatestUpdate,
+                     Version:     version,
+                     Type:        getType(v),
+                     TitleId:     v.File.Metadata.TitleId,
+                     Path:        v.File.ExtendedInfo.FileName,
+                     LocationTag: g.tagManager.GetLocationTag(filepath.Join(v.File.ExtendedInfo.BaseFolder, v.File.ExtendedInfo.FileName), scanFolders),
                   })
             }
 
