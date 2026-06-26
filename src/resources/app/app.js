@@ -336,6 +336,115 @@ $(function () {
         }
     }
 
+    /**
+     * ContextMenuManager - Manages right-click context menus for the application.
+     * Handles column visibility menus and action menus (ignore title/DLC).
+     */
+    class ContextMenuManager {
+        constructor() {
+            this.menuElement = null;
+            this._boundHide = this.hide.bind(this);
+        }
+
+        /**
+         * Show a context menu at the given position with the specified items.
+         * @param {number} x - X coordinate (page position)
+         * @param {number} y - Y coordinate (page position)
+         * @param {Array} items - Menu items. Each item has:
+         *   - {string} label - Display text
+         *   - {string|null} field - Field identifier (null for actions like "Reset")
+         *   - {boolean|null} visible - Checkbox state (null for non-checkbox items)
+         *   - {boolean} disabled - Whether the item is disabled
+         *   - {string} [type] - 'separator' for divider, 'action' for non-checkbox items
+         *   - {function} [onClick] - Callback when clicked
+         */
+        show(x, y, items) {
+            this.hide(); // Remove any existing menu
+
+            const menu = document.createElement('div');
+            menu.className = 'context-menu';
+
+            items.forEach(item => {
+                if (item.type === 'separator') {
+                    const sep = document.createElement('div');
+                    sep.className = 'context-menu-separator';
+                    menu.appendChild(sep);
+                    return;
+                }
+
+                const menuItem = document.createElement('div');
+                menuItem.className = 'context-menu-item' + (item.disabled ? ' disabled' : '');
+
+                if (item.visible !== null && item.visible !== undefined) {
+                    // Checkbox item (for column visibility)
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = item.visible;
+                    checkbox.disabled = item.disabled;
+                    menuItem.appendChild(checkbox);
+                }
+
+                const label = document.createElement('span');
+                label.textContent = item.label;
+                menuItem.appendChild(label);
+
+                if (!item.disabled && item.onClick) {
+                    menuItem.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        item.onClick(item);
+                        this.hide();
+                    });
+                }
+
+                menu.appendChild(menuItem);
+            });
+
+            // Position the menu, ensuring it stays within viewport
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+            document.body.appendChild(menu);
+
+            // Adjust if menu goes off-screen
+            const rect = menu.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                menu.style.left = (x - rect.width) + 'px';
+            }
+            if (rect.bottom > window.innerHeight) {
+                menu.style.top = (y - rect.height) + 'px';
+            }
+
+            this.menuElement = menu;
+
+            // Close on click outside or Escape
+            setTimeout(() => {
+                document.addEventListener('click', this._boundHide);
+                document.addEventListener('keydown', this._handleKeydown.bind(this));
+            }, 0);
+        }
+
+        /**
+         * Hide/dismiss the context menu.
+         */
+        hide() {
+            if (this.menuElement) {
+                this.menuElement.remove();
+                this.menuElement = null;
+            }
+            document.removeEventListener('click', this._boundHide);
+            document.removeEventListener('keydown', this._handleKeydown);
+        }
+
+        /**
+         * Handle keydown for Escape key dismissal.
+         * @private
+         */
+        _handleKeydown(e) {
+            if (e.key === 'Escape') {
+                this.hide();
+            }
+        }
+    }
+
     // This will wait for the astilectron namespace to be ready
     document.addEventListener('astilectron-ready', function () {
         

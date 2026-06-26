@@ -1272,3 +1272,72 @@ body.bootstrap-dark #status-table .tabulator-cell strong[style*="color:#E81123"]
 
 
 
+/* Context Menu */
+.context-menu {
+    position: fixed;
+    z-index: 10000;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 4px 0;
+    min-width: 180px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-size: 13px;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    color: #333;
+    transition: background 0.1s ease;
+}
+
+.context-menu-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.context-menu-item.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.context-menu-item.disabled:hover {
+    background: transparent;
+}
+
+.context-menu-item input[type="checkbox"] {
+    margin: 0;
+    width: 14px;
+    height: 14px;
+}
+
+.context-menu-separator {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.08);
+    margin: 4px 0;
+}
+
+/* Dark mode */
+body.bootstrap-dark .context-menu {
+    background: #2b2b2b;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+body.bootstrap-dark .context-menu-item {
+    color: #f3f2f1;
+}
+
+body.bootstrap-dark .context-menu-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+body.bootstrap-dark .context-menu-separator {
+    background: rgba(255, 255, 255, 0.08);
+}
