@@ -64,6 +64,278 @@ $(function () {
     $('.tabgroup > div').hide();
     // loadTab($('.tabgroup > div:first-of-type'));
 
+    /**
+     * ColumnConfigManager - Manages per-tab column configuration with localStorage persistence.
+     * Handles column visibility, width, and order for Tabulator grids.
+     */
+    class ColumnConfigManager {
+        /**
+         * @param {string} tabId - Unique identifier for the tab (e.g., 'library', 'updates', 'dlc', 'status', 'missing')
+         * @param {Array} defaultColumns - Array of Tabulator column definition objects (the default columns for this tab)
+         */
+        constructor(tabId, defaultColumns) {
+            this.tabId = tabId;
+            this.defaultColumns = defaultColumns;
+            this.storageKey = `nxcellar_columns_${tabId}`;
+            this.version = 1;
+        }
+
+        /**
+         * Save current column config to localStorage.
+         * Key: `nxcellar_columns_${tabId}`
+         * Value: JSON with { version: 1, columns: [{field, visible, width, position}] }
+         */
+        save() {
+            const config = {
+                version: this.version,
+                columns: this.defaultColumns.map((col, index) => ({
+                    field: col.field,
+                    visible: col.visible !== false,
+                    width: col.width || null,
+                    position: index
+                }))
+            };
+
+            // Apply any overrides from the internal state
+            const saved = this.load();
+            if (saved) {
+                config.columns = saved.columns;
+            }
+
+            localStorage.setItem(this.storageKey, JSON.stringify(config));
+        }
+
+        /**
+         * Load column config from localStorage.
+         * Returns the saved config or null if not found/corrupt.
+         * Validates version field. If version doesn't match or data is corrupt, returns null.
+         */
+        load() {
+            try {
+                const raw = localStorage.getItem(this.storageKey);
+                if (!raw) return null;
+
+                const config = JSON.parse(raw);
+
+                if (!config || config.version !== this.version) return null;
+                if (!Array.isArray(config.columns)) return null;
+
+                return config;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        /**
+         * Reset — remove localStorage key, return default columns.
+         * @returns {Array} - The default Tabulator column definitions
+         */
+        reset() {
+            localStorage.removeItem(this.storageKey);
+            return this.defaultColumns;
+        }
+
+        /**
+         * Set column visibility. Enforces at-least-one-visible invariant.
+         * @param {string} field - Column field name
+         * @param {boolean} visible - Whether to show or hide
+         * @returns {boolean} - false if operation rejected (would hide last column)
+         */
+        setVisibility(field, visible) {
+            const config = this._getWorkingConfig();
+
+            // If hiding, check that at least one other column remains visible
+            if (!visible) {
+                const visibleCount = config.columns.filter(c => c.visible).length;
+                if (visibleCount <= 1) {
+                    // Check if the column we're hiding is the last visible one
+                    const target = config.columns.find(c => c.field === field);
+                    if (target && target.visible) {
+                        return false;
+                    }
+                }
+            }
+
+            const col = config.columns.find(c => c.field === field);
+            if (col) {
+                col.visible = visible;
+            }
+
+            this._saveConfig(config);
+            return true;
+        }
+
+        /**
+         * Set column order from an array of field names.
+         * @param {Array<string>} fields - Ordered field names
+         */
+        setOrder(fields) {
+            const config = this._getWorkingConfig();
+
+            fields.forEach((field, index) => {
+                const col = config.columns.find(c => c.field === field);
+                if (col) {
+                    col.position = index;
+                }
+            });
+
+            this._saveConfig(config);
+        }
+
+        /**
+         * Set column width. Clamps to [50, viewportWidth].
+         * @param {string} field - Column field name
+         * @param {number} width - Desired width in pixels
+         */
+        setWidth(field, width) {
+            const config = this._getWorkingConfig();
+            const minWidth = 50;
+            const maxWidth = window.innerWidth;
+            const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
+
+            const col = config.columns.find(c => c.field === field);
+            if (col) {
+                col.width = clampedWidth;
+            }
+
+            this._saveConfig(config);
+        }
+
+        /**
+         * Get Tabulator column definitions with saved config applied.
+         * Merges saved visibility/width/order with the default column definitions.
+         * @returns {Array} - Tabulator column definition objects ready for use
+         */
+        getColumns() {
+            const config = this.load();
+
+            if (!config) {
+                // No saved config, return defaults with visible columns only
+                return this.defaultColumns.filter(col => col.visible !== false);
+            }
+
+            // Build a map of saved settings keyed by field
+            const savedMap = {};
+            config.columns.forEach(col => {
+                savedMap[col.field] = col;
+            });
+
+            // Merge defaults with saved config
+            const merged = this.defaultColumns.map((defaultCol, index) => {
+                const saved = savedMap[defaultCol.field];
+                if (saved) {
+                    const col = Object.assign({}, defaultCol);
+                    col.visible = saved.visible;
+                    if (saved.width != null) {
+                        col.width = saved.width;
+                    }
+                    col._position = saved.position != null ? saved.position : index;
+                    return col;
+                } else {
+                    // New column not in saved config — include with defaults
+                    const col = Object.assign({}, defaultCol);
+                    col._position = index + 1000; // Place new columns at the end
+                    return col;
+                }
+            });
+
+            // Sort by position
+            merged.sort((a, b) => a._position - b._position);
+
+            // Clean up internal _position property and filter to visible only
+            return merged
+                .filter(col => col.visible !== false)
+                .map(col => {
+                    const cleaned = Object.assign({}, col);
+                    delete cleaned._position;
+                    return cleaned;
+                });
+        }
+
+        /**
+         * Get context menu items for column visibility toggles.
+         * Returns array of {label, field, visible, disabled} objects.
+         * Includes a "Reset Columns" item at the end.
+         * @returns {Array}
+         */
+        getContextMenuItems() {
+            const config = this._getWorkingConfig();
+            const visibleCount = config.columns.filter(c => c.visible).length;
+
+            const items = config.columns.map(col => {
+                // Find the default column to get its title
+                const defaultCol = this.defaultColumns.find(d => d.field === col.field);
+                const label = (defaultCol && defaultCol.title) || col.field;
+
+                return {
+                    label: label,
+                    field: col.field,
+                    visible: col.visible,
+                    disabled: col.visible && visibleCount <= 1
+                };
+            });
+
+            // Add reset option at the end
+            items.push({
+                label: "Reset Columns",
+                field: null,
+                visible: null,
+                disabled: false
+            });
+
+            return items;
+        }
+
+        /**
+         * Get the working config — loads from localStorage or builds from defaults.
+         * @private
+         * @returns {Object} - Config object with version and columns array
+         */
+        _getWorkingConfig() {
+            const saved = this.load();
+            if (saved) {
+                // Filter out columns that no longer exist in defaults
+                const defaultFields = new Set(this.defaultColumns.map(c => c.field));
+                saved.columns = saved.columns.filter(c => defaultFields.has(c.field));
+
+                // Add any new default columns not in saved config
+                const savedFields = new Set(saved.columns.map(c => c.field));
+                this.defaultColumns.forEach((defaultCol, index) => {
+                    if (!savedFields.has(defaultCol.field)) {
+                        saved.columns.push({
+                            field: defaultCol.field,
+                            visible: defaultCol.visible !== false,
+                            width: defaultCol.width || null,
+                            position: saved.columns.length
+                        });
+                    }
+                });
+
+                return saved;
+            }
+
+            // Build from defaults
+            return {
+                version: this.version,
+                columns: this.defaultColumns.map((col, index) => ({
+                    field: col.field,
+                    visible: col.visible !== false,
+                    width: col.width || null,
+                    position: index
+                }))
+            };
+        }
+
+        /**
+         * Save the given config object to localStorage.
+         * @private
+         * @param {Object} config - Config object to persist
+         */
+        _saveConfig(config) {
+            localStorage.setItem(this.storageKey, JSON.stringify(config));
+        }
+    }
+
     // This will wait for the astilectron namespace to be ready
     document.addEventListener('astilectron-ready', function () {
         
