@@ -459,6 +459,8 @@ $(function () {
             astilectron.sendMessage({name: name, payload: payload}, callback)
         };
 
+        const contextMenu = new ContextMenuManager();
+
         sendMessage("loadSettings", "", function (message) {
             state.settings = JSON.parse(message);
 
@@ -627,6 +629,7 @@ $(function () {
                 if (state.updates && state.updates.length) {
                     currTable = new Tabulator("#updates-table", {
                         layout:"fitDataStretch",
+                        headerSortTristate: true,
                         initialSort:[
                             {column:"latest_update_date", dir:"desc"}, //sort by this first
                         ],
@@ -636,11 +639,24 @@ $(function () {
                         columns: [
                             {title: "Game", field: "Attributes.name", headerFilter:"input", formatter:fluentTitleFormatter, width:400},
                             {title: "Type", field: "Meta.type", headerFilter:"input"},
-                            {title: "Title ID", headerSort:false, field: "Attributes.id", hozAlign: "right", sorter: "number"},
-                            {title: "Local version", headerSort:false, field: "local_update", hozAlign: "right", sorter: "number"},
-                            {title: "Available version", headerSort:false, field: "latest_update", hozAlign: "right"},
-                            {title: "Update date", headerSort:true, field: "latest_update_date",sorter:"date", sorterParams:{format:"YYYY-MM-DD"}}
+                            {title: "Title ID", field: "Attributes.id", hozAlign: "right", sorter: "number"},
+                            {title: "Local version", field: "local_update", hozAlign: "right", sorter: "number"},
+                            {title: "Available version", field: "latest_update", hozAlign: "right"},
+                            {title: "Update date", field: "latest_update_date",sorter:"date", sorterParams:{format:"YYYY-MM-DD"}}
                         ],
+                    });
+                    currTable.on("rowContext", function(e, row){
+                        e.preventDefault();
+                        const data = row.getData();
+                        const titleId = data.Attributes ? data.Attributes.id : "";
+                        const name = data.Attributes ? data.Attributes.name : "Unknown";
+                        contextMenu.show(e.pageX, e.pageY, [
+                            {label: "Ignore \"" + name + "\"", field: titleId, visible: null, disabled: !titleId, onClick: function(item) {
+                                sendMessage("addToIgnoreList", JSON.stringify({type: "update", titleId: item.field}), function(r) {
+                                    row.delete();
+                                });
+                            }}
+                        ]);
                     });
                 }
             } else if (target === "#dlc") {
@@ -659,6 +675,7 @@ $(function () {
                 if (state.dlc && state.dlc.length) {
                     currTable = new Tabulator("#dlc-table", {
                         layout:"fitDataStretch",
+                        headerSortTristate: true,
                         initialSort:[
                             {column:"Attributes.name", dir:"asc"}, //sort by this first
                         ],
@@ -668,7 +685,7 @@ $(function () {
                         columns: [
                             {title: "Game", field: "Attributes.name", headerFilter:"input",formatter:fluentTitleFormatter, width:400},
                             {title: "# Missing", field: "missing_dlc.length"},
-                            {title: "Missing DLC", headerSort:false, field: "missing_dlc",formatter:function(cell, formatterParams, onRendered){
+                            {title: "Missing DLC", field: "missing_dlc",formatter:function(cell, formatterParams, onRendered){
                                     let value = ""
                                     for (var i in cell.getValue())
                                     {
@@ -677,6 +694,19 @@ $(function () {
                                     return value
                                 }}
                         ],
+                    });
+                    currTable.on("rowContext", function(e, row){
+                        e.preventDefault();
+                        const data = row.getData();
+                        const titleId = data.Attributes ? data.Attributes.id : "";
+                        const name = data.Attributes ? data.Attributes.name : "Unknown";
+                        contextMenu.show(e.pageX, e.pageY, [
+                            {label: "Ignore \"" + name + "\"", field: titleId, visible: null, disabled: !titleId, onClick: function(item) {
+                                sendMessage("addToIgnoreList", JSON.stringify({type: "dlc", titleId: item.field}), function(r) {
+                                    row.delete();
+                                });
+                            }}
+                        ]);
                     });
                 }
             } else if (target === "#status") {
@@ -688,6 +718,7 @@ $(function () {
                 if (state.library.issues && state.library.issues.length) {
                     currTable = new Tabulator("#status-table", {
                         layout:"fitDataStretch",
+                        headerSortTristate: true,
                         pagination: "local",
                         paginationSize: state.settings.gui_page_size,
                         data: state.library.issues,
@@ -695,7 +726,7 @@ $(function () {
                             {column:"type", dir:"asc"}, // Sort by issue type by default
                         ],
                         columns: [
-                            {title: "Type", field: "type", width: 140, hozAlign: "center", headerSort: true, formatter: function(cell) {
+                            {title: "Type", field: "type", width: 140, hozAlign: "center", formatter: function(cell) {
                                 const type = cell.getValue();
                                 let bg = "rgba(0,0,0,0.05)";
                                 let color = "#333";
@@ -738,7 +769,7 @@ $(function () {
                                 }
                                 return `<div style="background-color: ${bg}; color: ${color}; font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 12px; display: inline-block; line-height: 1;">${text}</div>`;
                             }},
-                            {title: "File name",width:500, headerSort:false, field: "key",formatter:fluentFileFormatter,cellClick:function(e, cell){
+                            {title: "File name",width:500, field: "key",formatter:fluentFileFormatter,cellClick:function(e, cell){
                                     //e - the click event object
                                     //cell - cell component
                                     shell.showItemInFolder(cell.getData().key)
@@ -777,17 +808,19 @@ $(function () {
                             {column:"name", dir:"asc"}, //sort by this first
                         ],
                         layout:"fitDataStretch",
+                        headerSortTristate: true,
                         pagination: "local",
                         paginationSize: state.settings.gui_page_size,
                         data: state.library.library_data,
                         columns: [
                             {title: "Game", field: "name", headerFilter:"input", formatter:fluentTitleFormatter, width:400},
-                            {title: "Title ID", headerSort:false, field: "titleId"},
-                            {title: "Region", headerSort:true, field: "region"},
-                            {title: "Type", headerSort:true, field: "type"},
-                            {title: "Update", headerSort:false, field: "update"},
-                            {title: "Version", headerSort:false, field: "version"},
-                            {title: "File name", headerSort:false, field: "path",formatter:fluentFileFormatter,cellClick:function(e, cell){
+                            {title: "Title ID", field: "titleId"},
+                            {title: "Region", field: "region"},
+                            {title: "Location", field: "locationTag", headerFilter:"list", headerFilterParams:{valuesLookup:true}, headerFilterPlaceholder:"Filter..."},
+                            {title: "Type", field: "type"},
+                            {title: "Update", field: "update"},
+                            {title: "Version", field: "version"},
+                            {title: "File name", field: "path",formatter:fluentFileFormatter,cellClick:function(e, cell){
                                     //e - the click event object
                                     //cell - cell component
                                     shell.showItemInFolder(cell.getData().path)
@@ -812,6 +845,7 @@ $(function () {
                 if (state.missingGames && state.missingGames.length) {
                     currTable = new Tabulator("#missingGames-table", {
                         layout:"fitDataStretch",
+                        headerSortTristate: true,
                         initialSort:[
                             {column:"name", dir:"asc"}, //sort by this first
                         ],
@@ -820,9 +854,9 @@ $(function () {
                         data: state.missingGames,
                         columns: [
                             {field: "name", title: "Game", headerFilter:"input", formatter:fluentTitleFormatter, width:400},
-                            {title: "Title ID", headerSort:false, field: "titleId"},
-                            {title: "Region", headerSort:true,headerFilter:"input",formatter:"textarea", field: "region"},
-                            {title: "Release date", headerSort:true, field: "release_date", sorter:"date", sorterParams:{format:"YYYY-MM-DD"}},
+                            {title: "Title ID", field: "titleId"},
+                            {title: "Region", headerFilter:"input",formatter:"textarea", field: "region"},
+                            {title: "Release date", field: "release_date", sorter:"date", sorterParams:{format:"YYYY-MM-DD"}},
                         ],
                     });
                 }
