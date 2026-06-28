@@ -131,6 +131,32 @@
             <input type="text" class="form-control" name="versions_json_url" value="{{:settings.versions_json_url}}">
         </div>
 
+        <h3 class="fluent-heading">File Management</h3>
+        <div class="form-row">
+            <label>Archive Folder (for moved files instead of deleting)</label>
+            <input type="text" class="form-control" name="archive_folder" value="{{:settings.archive_folder}}" placeholder="Absolute path, e.g. C:\Archive or /home/user/archive">
+            <small style="color:#888; font-size:12px;">Files will be moved here instead of deleted during organize operations. Leave empty to delete files permanently.</small>
+        </div>
+
+        <h3 class="fluent-heading">Location Tag Display Names</h3>
+        <div style="color:#888; font-size:12px; margin-bottom:12px;">Customize display names for your scan folders in the Library grid.</div>
+        {{if settings.scan_folders && settings.scan_folders.length}}
+        {{for settings.scan_folders}}
+        <div class="form-row">
+            <label>{{:#data}}</label>
+            <input type="text" class="form-control location-display-name" data-folder="{{:#data}}" value="" placeholder="Display name (e.g. Installed, Completed)" maxlength="50">
+        </div>
+        {{/for}}
+        {{else}}
+        <div style="color:#888; font-size:12px;">No additional scan folders configured. Add scan folders above to set display names.</div>
+        {{/if}}
+        {{if settings.folder}}
+        <div class="form-row">
+            <label>{{:settings.folder}}</label>
+            <input type="text" class="form-control location-display-name" data-folder="{{:settings.folder}}" value="" placeholder="Display name (e.g. Main Library)" maxlength="50">
+        </div>
+        {{/if}}
+
         <h3 class="fluent-heading">Ignore Lists</h3>
         <div class="form-row">
             <label>Ignore File Types (Comma-separated)</label>

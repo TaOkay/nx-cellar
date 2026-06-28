@@ -342,6 +342,8 @@ func (g *GUI) handleMessage(m *astilectron.EventMessage) interface{} {
 				tagErr = g.tagManager.RemoveTagFromGame(payload.TitleId, payload.TagName)
 			case "create":
 				tagErr = g.tagManager.CreateTag(payload.TagName)
+			case "setLocationName":
+				tagErr = g.tagManager.SetLocationDisplayName(payload.TitleId, payload.TagName)
 			default:
 				tagErr = fmt.Errorf("unknown action: %s", payload.Action)
 			}

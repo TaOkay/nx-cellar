@@ -938,6 +938,8 @@ $(function () {
             state.settings.ignore_update_title_ids = splitNewline(formData.get("ignore_update_title_ids"));
             state.settings.ignore_dlc_title_ids = splitNewline(formData.get("ignore_dlc_title_ids"));
             
+            state.settings.archive_folder = formData.get("archive_folder") || "";
+            
             const btn = $(this).find("button[type='submit']");
             const originalText = btn.text();
             btn.text("Saving...").prop("disabled", true);
@@ -953,6 +955,16 @@ $(function () {
                 } else {
                     document.getElementById("tab_btns").classList.remove("hide_missing_games");
                 }
+
+                // Save location display names
+                const locationInputs = document.querySelectorAll('.location-display-name');
+                locationInputs.forEach(input => {
+                    const folder = input.dataset.folder;
+                    const displayName = input.value.trim();
+                    if (displayName) {
+                        sendMessage("saveTags", JSON.stringify({action: "setLocationName", titleId: folder, tagName: displayName}), function(){});
+                    }
+                });
             });
         });
 
