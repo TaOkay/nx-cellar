@@ -461,6 +461,76 @@ $(function () {
 
         const contextMenu = new ContextMenuManager();
 
+        function showGameDetail(titleIdPrefix) {
+            sendMessage("getGameDetail", titleIdPrefix, function(response) {
+                const detail = JSON.parse(response);
+                
+                const overlay = document.createElement('div');
+                overlay.className = 'game-detail-overlay';
+                
+                const imgSrc = detail.icon_url || detail.banner_url || '';
+                const imgHtml = imgSrc ? '<img class="game-detail-image" src="' + imgSrc + '">' : '';
+                
+                let dlcHtml = '';
+                if (detail.dlc_list && detail.dlc_list.length > 0) {
+                    dlcHtml = '<div class="game-detail-section"><h4>DLC (' + detail.dlc_list.length + ')</h4>';
+                    detail.dlc_list.forEach(dlc => {
+                        const statusClass = dlc.owned ? 'game-detail-dlc-owned' : 'game-detail-dlc-missing';
+                        const statusText = dlc.owned ? '✓ Owned' : '✗ Missing';
+                        dlcHtml += '<div class="game-detail-dlc-item"><span class="' + statusClass + '">' + statusText + '</span><span>' + dlc.name + '</span></div>';
+                    });
+                    dlcHtml += '</div>';
+                }
+                
+                const descHtml = detail.description ? '<div class="game-detail-section"><h4>Description</h4><p class="game-detail-description">' + detail.description + '</p></div>' : '';
+                
+                const localVer = detail.local_version || 'None';
+                const latestVer = detail.latest_version || 'None';
+                
+                overlay.innerHTML = `
+                    <div class="game-detail-modal">
+                        <button class="game-detail-close">&times;</button>
+                        <div class="game-detail-header">
+                            ${imgHtml}
+                            <div class="game-detail-meta">
+                                <h3 class="game-detail-title">${detail.name || 'Unknown Title'}</h3>
+                                <div class="game-detail-info">
+                                    <div><strong>Publisher:</strong> ${detail.publisher || 'Not available'}</div>
+                                    <div><strong>Region:</strong> ${detail.region || 'Not available'}</div>
+                                    <div><strong>Release Date:</strong> ${detail.release_date || 'Not available'}</div>
+                                    <div><strong>Title ID:</strong> ${detail.title_id}</div>
+                                    <div><strong>Location:</strong> ${detail.location_tag || 'Unknown'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="game-detail-section">
+                            <h4>Update Status</h4>
+                            <div class="game-detail-versions">
+                                <div><strong>Installed:</strong> ${localVer}</div>
+                                <div><strong>Latest Available:</strong> ${latestVer}</div>
+                            </div>
+                        </div>
+                        ${descHtml}
+                        ${dlcHtml}
+                    </div>
+                `;
+                
+                document.body.appendChild(overlay);
+                
+                // Close handlers
+                overlay.querySelector('.game-detail-close').addEventListener('click', () => overlay.remove());
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) overlay.remove();
+                });
+                document.addEventListener('keydown', function escHandler(e) {
+                    if (e.key === 'Escape') {
+                        overlay.remove();
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                });
+            });
+        }
+
         sendMessage("loadSettings", "", function (message) {
             state.settings = JSON.parse(message);
 
@@ -868,6 +938,13 @@ $(function () {
                                 }
                             }}
                         ]);
+                    });
+                    currTable.on("rowDblClick", function(e, row){
+                        const data = row.getData();
+                        const titleId = data.titleId;
+                        if (titleId) {
+                            showGameDetail(titleId);
+                        }
                     });
                 }
             } else if (target === "#missing") {
