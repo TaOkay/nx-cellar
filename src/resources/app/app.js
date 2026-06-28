@@ -817,6 +817,25 @@ $(function () {
                             {title: "Title ID", field: "titleId"},
                             {title: "Region", field: "region"},
                             {title: "Location", field: "locationTag", headerFilter:"list", headerFilterParams:{valuesLookup:true}, headerFilterPlaceholder:"Filter..."},
+                            {title: "Tags", field: "customTags", headerFilter:"list", headerFilterParams:{valuesLookup:true, valuesLookupField:"customTags"}, headerFilterFunc: function(headerValue, rowValue) {
+                                if (!headerValue) return true;
+                                if (!rowValue || !Array.isArray(rowValue)) return false;
+                                return rowValue.some(tag => tag === headerValue);
+                            }, formatter: function(cell) {
+                                const tags = cell.getValue();
+                                if (!tags || !Array.isArray(tags) || tags.length === 0) return "";
+                                const maxShow = 5;
+                                let html = '<div style="display:flex; flex-wrap:wrap; gap:4px; padding:2px 0;">';
+                                const shown = tags.slice(0, maxShow);
+                                shown.forEach(tag => {
+                                    html += '<span style="background:#0078D4; color:#fff; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500;">' + tag + '</span>';
+                                });
+                                if (tags.length > maxShow) {
+                                    html += '<span style="background:#666; color:#fff; font-size:11px; padding:2px 6px; border-radius:10px; font-weight:500;">+' + (tags.length - maxShow) + '</span>';
+                                }
+                                html += '</div>';
+                                return html;
+                            }},
                             {title: "Type", field: "type"},
                             {title: "Update", field: "update"},
                             {title: "Version", field: "version"},
@@ -827,6 +846,28 @@ $(function () {
                                 }
                             }
                         ],
+                    });
+                    currTable.on("rowContext", function(e, row){
+                        e.preventDefault();
+                        const data = row.getData();
+                        const titleId = data.titleId || "";
+                        const name = data.name || "Unknown";
+                        contextMenu.show(e.pageX, e.pageY, [
+                            {label: "Add Tag to \"" + name + "\"", field: titleId, visible: null, disabled: !titleId, onClick: function(item) {
+                                const tagName = prompt("Enter tag name (or select existing):\n\nExisting tags will be loaded from the tag store.");
+                                if (tagName && tagName.trim()) {
+                                    // First create the tag if it doesn't exist, then assign it
+                                    sendMessage("saveTags", JSON.stringify({action: "create", titleId: "", tagName: tagName.trim()}), function(r) {
+                                        // Now assign to the game
+                                        sendMessage("saveTags", JSON.stringify({action: "add", titleId: item.field, tagName: tagName.trim()}), function(r2) {
+                                            // Refresh library to show updated tags
+                                            state.library = undefined;
+                                            scanLocalFolder(true);
+                                        });
+                                    });
+                                }
+                            }}
+                        ]);
                     });
                 }
             } else if (target === "#missing") {
