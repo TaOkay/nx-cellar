@@ -1162,6 +1162,84 @@ $(function () {
             });
         });
 
+        // Show Duplicates button
+        $("body").on("click", ".show-duplicates-btn", function(e) {
+            e.preventDefault();
+            sendMessage("getDuplicates", "", function(response) {
+                const result = JSON.parse(response);
+                const container = document.getElementById("duplicates-view");
+                
+                if (!result.groups || result.groups.length === 0) {
+                    container.innerHTML = '<div class="alert alert-success" role="alert"><div class="alert-icon">✅</div><div class="alert-content">No duplicate files found!</div></div>';
+                    container.style.display = "block";
+                    return;
+                }
+                
+                const formatSize = (bytes) => {
+                    if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
+                    if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+                    return (bytes / 1024).toFixed(0) + ' KB';
+                };
+                
+                let html = '<div class="alert alert-warning" role="alert"><div class="alert-icon">⚠️</div><div class="alert-content"><strong>' + result.total_groups + '</strong> duplicate groups found. Potential space savings: <strong>' + formatSize(result.total_reclaimable) + '</strong></div><div class="alert-actions"><button type="button" class="btn btn-success resolve-duplicates-btn">Archive Non-Selected</button></div></div>';
+                
+                html += '<div style="margin-top:16px;">';
+                result.groups.forEach((group, idx) => {
+                    html += '<div style="background:rgba(0,0,0,0.02); border-radius:8px; padding:16px; margin-bottom:12px;">';
+                    html += '<h4 style="margin:0 0 8px 0; font-size:14px; font-weight:600;">' + (group.name || group.title_id) + '</h4>';
+                    group.files.forEach(file => {
+                        const isRecommended = file.path === group.recommended_keep;
+                        const checked = isRecommended ? 'checked' : '';
+                        const label = file.path.replace(/\\/g, '/').split('/').pop();
+                        html += '<label style="display:flex; align-items:center; gap:8px; padding:4px 0; cursor:pointer;">';
+                        html += '<input type="radio" name="dup_' + idx + '" value="' + file.path.replace(/"/g, '&quot;') + '" ' + checked + ' style="margin:0;">';
+                        html += '<span style="flex:1; font-size:13px;">' + label + '</span>';
+                        html += '<span style="font-size:12px; color:#888;">' + formatSize(file.size) + '</span>';
+                        html += '<span style="font-size:11px; padding:2px 6px; border-radius:4px; background:' + (file.compressed ? '#107C10' : '#888') + '; color:#fff;">' + file.type.toUpperCase() + '</span>';
+                        if (isRecommended) html += '<span style="font-size:11px; color:#0078D4; font-weight:500;">★ Recommended</span>';
+                        html += '</label>';
+                    });
+                    html += '</div>';
+                });
+                html += '</div>';
+                
+                container.innerHTML = html;
+                container.style.display = "block";
+            });
+        });
+
+        // Resolve Duplicates button
+        $("body").on("click", ".resolve-duplicates-btn", function(e) {
+            e.preventDefault();
+            const container = document.getElementById("duplicates-view");
+            const radios = container.querySelectorAll('input[type="radio"]:checked');
+            const selections = [];
+            
+            radios.forEach(radio => {
+                const groupName = radio.name.replace('dup_', '');
+                selections.push({titleId: groupName, keepPath: radio.value});
+            });
+            
+            if (selections.length === 0) {
+                alert("No files selected to keep. Please select one file per group.");
+                return;
+            }
+            
+            const confirmMsg = "This will move " + selections.length + " groups of duplicate files to the archive folder. Continue?";
+            if (!confirm(confirmMsg)) return;
+            
+            sendMessage("resolveDuplicates", JSON.stringify(selections), function(response) {
+                const result = JSON.parse(response);
+                alert("Duplicate resolution complete. Check the archive folder.");
+                container.style.display = "none";
+                // Trigger a rescan to refresh the library
+                state.library = undefined;
+                state.updates = undefined;
+                state.dlc = undefined;
+                scanLocalFolder(true);
+            });
+        });
+
         // Dark Mode Toggle
         $("body").on("click", "#toggle-dark-mode", e => {
             e.preventDefault();

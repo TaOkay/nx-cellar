@@ -338,10 +338,12 @@
                    <div class="alert-content"><strong>{{:library.length}}</strong> files were skipped during scan, additional details below:</div>
                    <div class="alert-actions">
                        <button type="button" class="btn btn-success library-organize-action">Organize & Fix</button>
+                       <button type="button" class="btn btn-outline-primary show-duplicates-btn">Show Duplicates</button>
                        <button type="button" class="btn btn-outline-primary export-btn">Export CSV</button>
                    </div>
                </div>
                <section id="status-table" class="content"></section>
+               <section id="duplicates-view" style="display:none;"></section>
            {{else}}
                <div class="alert alert-success" role="alert">
                    <div class="alert-icon">✅</div>
