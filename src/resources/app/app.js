@@ -1099,13 +1099,6 @@ $(function () {
                             state.dlc = undefined;
                             loadTab("#library");
                             scanLocalFolder(true);
-                            dialog.showMessageBox(null, {
-                                type: 'info',
-                                buttons: ['Ok'],
-                                defaultId: 0,
-                                title: 'Success',
-                                message: 'Operation completed successfully'
-                            });
                         }));
                     }
                 });
@@ -1150,13 +1143,6 @@ $(function () {
                         state.dlc = undefined;
                         loadTab("#library");
                         scanLocalFolder(true);
-                        dialog.showMessageBox(null, {
-                            type: 'info',
-                            buttons: ['Ok'],
-                            defaultId: 0,
-                            title: 'Success',
-                            message: 'Operation completed successfully'
-                        });
                     }));
                 }
             });
