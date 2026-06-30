@@ -714,19 +714,19 @@ $(function () {
                             {title: "Available version", field: "latest_update", hozAlign: "right"},
                             {title: "Update date", field: "latest_update_date",sorter:"date", sorterParams:{format:"YYYY-MM-DD"}}
                         ],
-                    });
-                    currTable.on("rowContext", function(e, row){
-                        e.preventDefault();
-                        const data = row.getData();
-                        const titleId = data.Attributes ? data.Attributes.id : "";
-                        const name = data.Attributes ? data.Attributes.name : "Unknown";
-                        contextMenu.show(e.pageX, e.pageY, [
-                            {label: "Ignore \"" + name + "\"", field: titleId, visible: null, disabled: !titleId, onClick: function(item) {
-                                sendMessage("addToIgnoreList", JSON.stringify({type: "update", titleId: item.field}), function(r) {
-                                    row.delete();
-                                });
-                            }}
-                        ]);
+                        rowContext: function(e, row){
+                            e.preventDefault();
+                            const data = row.getData();
+                            const titleId = data.Attributes ? data.Attributes.id : "";
+                            const name = data.Attributes ? data.Attributes.name : "Unknown";
+                            contextMenu.show(e.pageX, e.pageY, [
+                                {label: "Ignore \"" + name + "\"", field: titleId, visible: null, disabled: !titleId, onClick: function(item) {
+                                    sendMessage("addToIgnoreList", JSON.stringify({type: "update", titleId: item.field}), function(r) {
+                                        row.delete();
+                                    });
+                                }}
+                            ]);
+                        },
                     });
                 }
             } else if (target === "#dlc") {
@@ -764,19 +764,19 @@ $(function () {
                                     return value
                                 }}
                         ],
-                    });
-                    currTable.on("rowContext", function(e, row){
-                        e.preventDefault();
-                        const data = row.getData();
-                        const titleId = data.Attributes ? data.Attributes.id : "";
-                        const name = data.Attributes ? data.Attributes.name : "Unknown";
-                        contextMenu.show(e.pageX, e.pageY, [
-                            {label: "Ignore \"" + name + "\"", field: titleId, visible: null, disabled: !titleId, onClick: function(item) {
-                                sendMessage("addToIgnoreList", JSON.stringify({type: "dlc", titleId: item.field}), function(r) {
-                                    row.delete();
-                                });
-                            }}
-                        ]);
+                        rowContext: function(e, row){
+                            e.preventDefault();
+                            const data = row.getData();
+                            const titleId = data.Attributes ? data.Attributes.id : "";
+                            const name = data.Attributes ? data.Attributes.name : "Unknown";
+                            contextMenu.show(e.pageX, e.pageY, [
+                                {label: "Ignore \"" + name + "\"", field: titleId, visible: null, disabled: !titleId, onClick: function(item) {
+                                    sendMessage("addToIgnoreList", JSON.stringify({type: "dlc", titleId: item.field}), function(r) {
+                                        row.delete();
+                                    });
+                                }}
+                            ]);
+                        },
                     });
                 }
             } else if (target === "#status") {
@@ -916,35 +916,35 @@ $(function () {
                                 }
                             }
                         ],
-                    });
-                    currTable.on("rowContext", function(e, row){
-                        e.preventDefault();
-                        const data = row.getData();
-                        const titleId = data.titleId || "";
-                        const name = data.name || "Unknown";
-                        contextMenu.show(e.pageX, e.pageY, [
-                            {label: "Add Tag to \"" + name + "\"", field: titleId, visible: null, disabled: !titleId, onClick: function(item) {
-                                const tagName = prompt("Enter tag name (or select existing):\n\nExisting tags will be loaded from the tag store.");
-                                if (tagName && tagName.trim()) {
-                                    // First create the tag if it doesn't exist, then assign it
-                                    sendMessage("saveTags", JSON.stringify({action: "create", titleId: "", tagName: tagName.trim()}), function(r) {
-                                        // Now assign to the game
-                                        sendMessage("saveTags", JSON.stringify({action: "add", titleId: item.field, tagName: tagName.trim()}), function(r2) {
-                                            // Refresh library to show updated tags
-                                            state.library = undefined;
-                                            scanLocalFolder(true);
+                        rowContext: function(e, row){
+                            e.preventDefault();
+                            const data = row.getData();
+                            const titleId = data.titleId || "";
+                            const name = data.name || "Unknown";
+                            contextMenu.show(e.pageX, e.pageY, [
+                                {label: "Add Tag to \"" + name + "\"", field: titleId, visible: null, disabled: !titleId, onClick: function(item) {
+                                    const tagName = prompt("Enter tag name (or select existing):\n\nExisting tags will be loaded from the tag store.");
+                                    if (tagName && tagName.trim()) {
+                                        // First create the tag if it doesn't exist, then assign it
+                                        sendMessage("saveTags", JSON.stringify({action: "create", titleId: "", tagName: tagName.trim()}), function(r) {
+                                            // Now assign to the game
+                                            sendMessage("saveTags", JSON.stringify({action: "add", titleId: item.field, tagName: tagName.trim()}), function(r2) {
+                                                // Refresh library to show updated tags
+                                                state.library = undefined;
+                                                scanLocalFolder(true);
+                                            });
                                         });
-                                    });
-                                }
-                            }}
-                        ]);
-                    });
-                    currTable.on("rowDblClick", function(e, row){
-                        const data = row.getData();
-                        const titleId = data.titleId;
-                        if (titleId) {
-                            showGameDetail(titleId);
-                        }
+                                    }
+                                }}
+                            ]);
+                        },
+                        rowDblClick: function(e, row){
+                            const data = row.getData();
+                            const titleId = data.titleId;
+                            if (titleId) {
+                                showGameDetail(titleId);
+                            }
+                        },
                     });
                 }
             } else if (target === "#missing") {
